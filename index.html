@@ -189,23 +189,71 @@ const missions=[
  {name:"王座圣殿",tagline:"最终决战 · 王座攻坚",kicker:"MISSION 03 / FINAL CHAPTER",desc:"最终圣殿的大门已经开启。直面深渊统帅，结束漫长的王座战争。",goal:"击败守卫王座的全部力量"}
 ];
 let selectedMission=0,currentMission=0,campaignDifficulty="normal";
-let campaignState={cleared:[]};
-try{const saved=JSON.parse(localStorage.getItem("kmd_dominion_campaign")||"null");if(saved&&Array.isArray(saved.cleared))campaignState=saved;}catch(e){}
+let campaignState = { cleared: [] };
+
+try {
+  const saved = JSON.parse(
+    localStorage.getItem("kmd_dominion_campaign") || "null"
+  );
+
+  if (
+    saved &&
+    Array.isArray(saved.cleared)
+  ) {
+    campaignState.cleared = [
+      ...new Set(
+        saved.cleared.filter(
+          x => Number.isInteger(x) && x >= 0 && x <= 2
+        )
+      )
+    ].sort((a, b) => a - b);
+  }
+} catch (error) {
+  console.warn("KMD战役存档读取失败：", error);
+}
 function missionUnlocked(i){return i===0||campaignState.cleared.includes(i-1);}
 function saveCampaign(){try{localStorage.setItem("kmd_dominion_campaign",JSON.stringify(campaignState));}catch(e){}}
 function refreshCampaign(){document.querySelectorAll(".map-node").forEach((n,i)=>{n.classList.toggle("locked",!missionUnlocked(i));n.classList.toggle("cleared",campaignState.cleared.includes(i));n.classList.toggle("active",i===selectedMission);n.querySelector("small").textContent=campaignState.cleared.includes(i)?"✓ 已完成":(!missionUnlocked(i)?"🔒 尚未解锁":missions[i].tagline);});let done=campaignState.cleared.length;$("campaignProgress").innerHTML=`战役进度：${done} / 3 章节完成<div class="campaign-progress-line"><i style="width:${done/3*100}%"></i></div>`;}
 function openCampaign(){refreshCampaign();$("campaignModal").classList.add("open");$("campaignModal").setAttribute("aria-hidden","false");}
 function closeCampaign(){ $("campaignModal").classList.remove("open");$("campaignModal").setAttribute("aria-hidden","true");}
 function selectMission(i){if(!missionUnlocked(i)){battleTitle("CHAPTER LOCKED");return;}selectedMission=i;refreshCampaign();let m=missions[i];$("missionDetail").innerHTML=`<div class="mission-kicker">${m.kicker}</div><h3>${m.name}</h3><p>${m.desc}</p><div class="mission-meta"><span>✦ 目标：${m.goal}</span><span>⚔ 模式：单人 AI</span></div><label class="difficulty-label">挑战难度 <select id="campaignDifficulty"><option value="normal">标准</option><option value="hard">困难</option><option value="nightmare">噩梦</option></select></label><button class="primary" onclick="launchMission()">进入战场</button>`;}
-function launchMission(){campaignDifficulty=$("campaignDifficulty")?.value||"normal";currentMission=selectedMission;closeCampaign();$("mode").value="ai";init();prepareMission();log("战役章节："+missions[currentMission].name+"。"+missions[currentMission].desc);log("挑战难度："+({normal:"标准",hard:"困难",nightmare:"噩梦"}[campaignDifficulty])+"。");battleTitle(missions[currentMission].name.toUpperCase());}
+function launchMission(){campaignDifficulty=$("campaignDifficulty")?.value||"normal";currentMission=selectedMission;closeCampaign();$("mode").value="ai";// KMD启动系统：等待玩家选择游戏模式
+document.addEventListener("DOMContentLoaded", function () {
+  const modal = document.getElementById("startModal");
+
+  if (modal) {
+    modal.style.display = "flex";
+  }
+});;prepareMission();log("战役章节："+missions[currentMission].name+"。"+missions[currentMission].desc);log("挑战难度："+({normal:"标准",hard:"困难",nightmare:"噩梦"}[campaignDifficulty])+"。");battleTitle(missions[currentMission].name.toUpperCase());}
 function prepareMission(){let stage=currentMission;let bonus=stage===0?0:stage===1?2:4;let atk=stage===0?0:stage===1?1:2;let scale=campaignDifficulty==="normal"?1:campaignDifficulty==="hard"?1.25:1.55;
 board.forEach(row=>row.forEach(u=>{if(u&&u.side===1){u.max+=Math.round(bonus*scale);u.hp=u.max;u._atkBonus=Math.round(atk*scale);}}));
 if(stage>=1){if(board[2][2]===null)board[2][2]=unit("bone",1);if(board[2][5]===null)board[2][5]=unit("hunter",1);}
 if(stage>=2){if(board[1][3]===null)board[1][3]=unit("nightmare",1);if(board[2][4]===null)board[2][4]=unit("witch",1);let core=board[0].find(u=>u&&u.type==="core");if(core){core.max+=Math.round(4*scale);core.hp=core.max;}}
 render();}
-function completeMission(){if(!campaignState.cleared.includes(currentMission))
-  campaignState.cleared.push(currentMission);campaignState.cleared.sort();saveCampaign();refreshCampaign();battleTitle("CHAPTER CLEARED");log("战役记录已保存："+missions[currentMission].name+" 完成。");}\nfunction resetCampaign(){if(!confirm("确定清除本机保存的战役进度吗？"))return;campaignState={cleared:[]};saveCampaign();selectedMission=0;selectMission(0);refreshCampaign();}
 
+function completeMission() {
+  if (!campaignState.cleared.includes(currentMission)) {
+    campaignState.cleared.push(currentMission);
+    campaignState.cleared.sort((a, b) => a - b);
+    saveCampaign();
+  }
+
+  refreshCampaign();
+  battleTitle("CHAPTER CLEARED");
+  log("战役记录已保存：" + missions[currentMission].name + " 完成。");
+}
+
+function resetCampaign() {
+  if (!confirm("确定清除本机保存的战役进度吗？")) {
+    return;
+  }
+
+  campaignState = { cleared: [] };
+  saveCampaign();
+  selectedMission = 0;
+  selectMission(0);
+  refreshCampaign();
+}
 const defs={
  core:{name:"王座核心",icon:"♛",hp:18,atk:3,range:1,move:0,desc:"阵营命脉。不可移动，核心被摧毁即告失败。"},
  knight:{name:"圣骑士",icon:"⚔",hp:10,atk:4,range:1,move:1,desc:"前线主力。相邻攻击，坚韧可靠。"},
@@ -230,19 +278,93 @@ function init(){
  rows[1].forEach((t,c)=>board[0][c]=unit(t,1));board[1][1]=unit("hunter",1);board[1][6]=unit("nightmare",1);
  log("新战局开始：圣辉联军先手。");render();
 }
-function start(m){$("mode").value=m; $("startModal").style.display="none";init()}
-function newGame(){if(!$("startModal"))return;$("startModal").style.display="none";init()}
+
+function start(m) {
+  if (m !== "ai" && m !== "local") return;
+
+  $("mode").value = m;
+  mode = m;
+
+  $("startModal").style.display = "none";
+
+  init();
+
+  log(
+    m === "ai"
+      ? "游戏模式：单人战役，深渊 AI 已启用。"
+      : "游戏模式：本地双人对战。"
+  );
+}
+
+function newGame() {
+  if (!confirm("确定重新开始当前战局吗？")) {
+    return;
+  }
+
+  $("startModal").style.display = "none";
+  init();
+
+  log("已创建新的战局。");
+}
 function log(s){let d=document.createElement("div");d.textContent=s;$("log").prepend(d)}
 function inside(r,c){return r>=0&&r<8&&c>=0&&c<8}
-function moves(u,r,c){
- let out=[];if(u.type==="core")return out;let d=defs[u.type];
- for(let rr=0;rr<8;rr++)for(let cc=0;cc<8;cc++){let dist=Math.max(Math.abs(rr-r),Math.abs(cc-c));if(dist===0||dist>d.move)continue;if(board[rr][cc]&&board[rr][cc].side===u.side)continue;
- // movement is king-step style; ranged units may move only within move range
- out.push([rr,cc]);}
- return out;
-  
+
+function moves(u, r, c) {
+  const out = [];
+
+  if (!u || u.type === "core") return out;
+
+  const d = defs[u.type];
+
+  for (let rr = 0; rr < 8; rr++) {
+    for (let cc = 0; cc < 8; cc++) {
+      const dist = Math.max(
+        Math.abs(rr - r),
+        Math.abs(cc - c)
+      );
+
+      if (dist === 0 || dist > d.move) continue;
+
+      // 只能移动到真正的空格
+      if (board[rr][cc] !== null) continue;
+
+      out.push([rr, cc]);
+    }
+  }
+
+  return out;
 }
-function targets(u,r,c){let out=[];let range=defs[u.type].range;for(let rr=0;rr<8;rr++)for(let cc=0;cc<8;cc++){let dist=Math.max(Math.abs(rr-r),Math.abs(cc-c));if(dist>0&&dist<=range&&board[rr][cc]&&board[rr][cc].side!==u.side)out.push([rr,cc])}return out}
+}
+
+function targets(u, r, c) {
+  const out = [];
+
+  if (!u) return out;
+
+  const range = defs[u.type].range;
+
+  for (let rr = 0; rr < 8; rr++) {
+    for (let cc = 0; cc < 8; cc++) {
+      const dist = Math.max(
+        Math.abs(rr - r),
+        Math.abs(cc - c)
+      );
+
+      const target = board[rr][cc];
+
+      if (
+        dist > 0 &&
+        dist <= range &&
+        target &&
+        target.side !== u.side
+      ) {
+        out.push([rr, cc]);
+      }
+    }
+  }
+
+  return out;
+}
 function render(){
  $("board").innerHTML="";
  for(let r=0;r<8;r++)for(let c=0;c<8;c++){let cell=document.createElement("div");cell.className="cell";let u=board[r][c];
@@ -264,11 +386,202 @@ function clickCell(r,c){if(gameOver||(mode==="ai"&&turn===1))return;let u=board[
 function attack(a,d,r,c){let source=board.flatMap((row,rr)=>row.map((u,cc)=>u===a?{r:rr,c:cc}:null)).find(Boolean);if(source&&defs[a.type].range>1)projectile(source.r,source.c,r,c,a.side===0?"#77e5ff":"#ff777f");else impact(r,c,a.side===0?"#8de8ff":"#ff8b87");sound("hit");$("board").parentElement.classList.remove("shake");void $("board").parentElement.offsetWidth;$("board").parentElement.classList.add("shake");let hitCell=$("board").children[r*8+c];if(hitCell){hitCell.classList.add("attack");setTimeout(()=>hitCell.classList.remove("attack"),650)}let damage=defs[a.type].atk+(a._atkBonus||0);if(a.type==="nightmare"&&Math.random()<.25)damage+=2;let blocked=Math.min(d.guard,damage);d.guard-=blocked;damage-=blocked;d.hp-=damage;if(damage>0)impact(r,c,a.side===0?"#a5eaff":"#ff9a91","-"+damage);log(`${defs[a.type].name} 攻击 ${defs[d.type].name}，造成 ${damage} 点伤害。`);if(d.hp<=0){log(`${defs[d.type].name} 被击败！`);battleTitle("UNIT DESTROYED");impact(r,c,"#fff0ba","✦");board[r][c]=null;if(d.type==="core"){gameOver=true;sound("win");battleTitle("VICTORY");if(turn===0&&mode==="ai")completeMission();setTimeout(()=>alert((turn===0?"圣辉联军":"深渊军团")+"赢得王座之争！"),80)}}}
 function afterAction(){energy[turn]=Math.min(6,energy[turn]+1);if(mode==="local")turn=1-turn;render();if(!gameOver&&mode==="ai"&&turn===0){turn=1;selected=null;render();setTimeout(aiTurn,550)}}
 function endTurn(){if(gameOver||(mode==="ai"&&turn===1))return;selected=null;energy[turn]=Math.min(6,energy[turn]+1);turn=1-turn;log((turn===0?"圣辉联军":"深渊军团")+"开始行动。");render();if(mode==="ai"&&turn===1)setTimeout(aiTurn,550)}
-function aiTurn(){if(gameOver)return;sound("move");let candidates=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++){let u=board[r][c];if(!u||u.side!==1||u.type==="core")continue;for(let [rr,cc] of targets(u,r,c)){let target=board[rr][cc];let score=defs[u.type].atk+(target.type==="core"?100:defs[target.type].hp<=defs[u.type].atk?20:0);candidates.push({kind:"attack",u,r,c,rr,cc,score})}for(let [rr,cc] of moves(u,r,c)){let nearCor
-e=board.flat().some(x=>x&&x.side===0&&x.type==="core");let score=Math.random()*2+(7-rr)*.15;if(nearCore&&Math.abs(rr-7)+Math.abs(cc-0)<Math.abs(r-7)+Math.abs(c-0))score+=1;candidates.push({kind:"move",u,r,c,rr,cc,score})}}
- if(!candidates.length){turn=0;render();return}candidates.sort((a,b)=>b.score-a.score);let act=candidates[0];if(act.kind==="attack")attack(act.u,board[act.rr][act.cc],act.rr,act.cc);else{board[act.rr][act.cc]=act.u;board[act.r][act.c]=null;log(`深渊军团：${defs[act.u.type].name} 调整阵位。`)}
- energy[1]=Math.min(6,energy[1]+1);turn=0;render()}
-function useSkill(skill){$("board").parentElement.classList.remove("skill-flash");void $("board").parentElement.offsetWidth;$("board").parentElement.classList.add("skill-flash");if(gameOver||(mode==="ai"&&turn===1))return;if(skill==="burst"){sound("magic");battleTitle("ARCANE BLAST");$("board").parentElement.classList.add("magic");setTimeout(()=>$("board").parentElement.classList.remove("magic"),700);if(energy[turn]<3){log("能量不足：奥术冲击需要 3 点能量。");return}let enemies=[];board.forEach((row,r)=>row.forEach((u,c)=>{if(u&&u.side!==turn&&u.type!=="core")enemies.push({u,r,c})}));if(!enemies.length)return;let t=enemies.sort((a,b)=>a.u.hp-b.u.hp)[0];t.u.hp-=5;energy[turn]-=3;log("奥术冲击命中 "+defs[t.u.type].name+"，造成 5 点伤害。");if(t.u.hp<=0)board[t.r][t.c]=null;afterAction()}
+
+function aiTurn() {
+  if (gameOver || mode !== "ai" || turn !== 1) return;
+
+  const candidates = [];
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const u = board[r][c];
+
+      if (!u || u.side !== 1 || u.type === "core") continue;
+
+      // 评估攻击
+      for (const [rr, cc] of targets(u, r, c)) {
+        const target = board[rr][cc];
+        const damage = defs[u.type].atk + (u._atkBonus || 0);
+
+        let score = 20 + damage;
+
+        if (target.type === "core") score += 200;
+        if (target.hp <= damage) score += 60;
+        if (target.hp <= 3) score += 15;
+
+        candidates.push({
+          kind: "attack",
+          r, c, rr, cc, score
+        });
+      }
+
+      // 评估移动
+      for (const [rr, cc] of moves(u, r, c)) {
+        const distanceBefore =
+          Math.abs(r - 7) + Math.abs(c - 0);
+
+        const distanceAfter =
+          Math.abs(rr - 7) + Math.abs(cc - 0);
+
+        let score = Math.random() * 3;
+
+        score += (distanceBefore - distanceAfter) * 1.5;
+
+        if (u.type === "hunter" || u.type === "witch") {
+          score += 2;
+        }
+
+        candidates.push({
+          kind: "move",
+          r, c, rr, cc, score
+        });
+      }
+    }
+  }
+
+  if (!candidates.length) {
+    log("深渊军团无法行动，结束回合。");
+    turn = 0;
+    render();
+    return;
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+
+  const action = candidates[0];
+  const u = board[action.r][action.c];
+
+  if (!u) {
+    turn = 0;
+    render();
+    return;
+  }
+
+  if (action.kind === "attack") {
+    const target = board[action.rr][action.cc];
+
+    if (target && target.side !== 1) {
+      attack(u, target, action.rr, action.cc);
+    }
+  } else {
+    board[action.rr][action.cc] = u;
+    board[action.r][action.c] = null;
+
+    log("深渊军团：" + defs[u.type].name + " 调整阵位。");
+    sound("move");
+  }
+
+  energy[1] = Math.min(6, energy[1] + 1);
+
+  selected = null;
+
+  if (!gameOver) {
+    turn = 0;
+  }
+
+  render();
+}
+
+function useSkill(skill) {
+  if (gameOver || (mode === "ai" && turn === 1)) return;
+
+  const costs = {
+    burst: 3,
+    heal: 2,
+    guard: 2
+  };
+
+  if (!(skill in costs)) return;
+
+  if (energy[turn] < costs[skill]) {
+    log("能量不足，无法使用技能。");
+    return;
+  }
+
+  let allies = [];
+  let enemies = [];
+
+  board.forEach((row, r) => {
+    row.forEach((u, c) => {
+      if (!u) return;
+
+      if (u.side === turn && u.type !== "core") {
+        allies.push({ u, r, c });
+      }
+
+      if (u.side !== turn && u.type !== "core") {
+        enemies.push({ u, r, c });
+      }
+    });
+  });
+
+  if (skill === "burst") {
+    if (!enemies.length) {
+      log("没有可攻击的敌军目标。");
+      return;
+    }
+
+    enemies.sort((a, b) => a.u.hp - b.u.hp);
+
+    const t = enemies[0];
+    t.u.hp -= 5;
+
+    energy[turn] -= costs.burst;
+
+    log("奥术冲击命中 " + defs[t.u.type].name + "，造成5点伤害。");
+
+    impact(t.r, t.c, "#9a80ff", "-5");
+
+    if (t.u.hp <= 0) {
+      log(defs[t.u.type].name + " 被奥术冲击击败！");
+      board[t.r][t.c] = null;
+    }
+  }
+
+  if (skill === "heal") {
+    const injured = allies.filter(x => x.u.hp < x.u.max);
+
+    if (!injured.length) {
+      log("当前没有需要治疗的友军。");
+      return;
+    }
+
+    injured.sort(
+      (a, b) => a.u.hp / a.u.max - b.u.hp / b.u.max
+    );
+
+    const t = injured[0];
+
+    const healed = Math.min(4, t.u.max - t.u.hp);
+    t.u.hp += healed;
+
+    energy[turn] -= costs.heal;
+
+    log("圣愈术恢复 " + defs[t.u.type].name + " " + healed + " 点生命。");
+  }
+
+  if (skill === "guard") {
+    if (!allies.length) {
+      log("没有可以守护的友军。");
+      return;
+    }
+
+    allies.sort((a, b) => a.u.hp - b.u.hp);
+
+    const t = allies[0];
+
+    t.u.guard += 4;
+    energy[turn] -= costs.guard;
+
+    log(defs[t.u.type].name + " 获得4点护盾。");
+  }
+
+  sound("magic");
+
+  $("board").parentElement.classList.add("skill-flash");
+
+  afterAction();
+}
  if(skill==="heal"){sound("magic");battleTitle("HOLY RESTORATION");if(energy[turn]<2){log("能量不足：圣愈术需要 2 点能量。");return}let allies=[];board.forEach((row,r)=>row.forEach((u,c)=>{if(u&&u.side===turn&&u.type!=="core"&&u.hp<u.max)allies.push({u,r,c})}));if(!allies.length){log("当前没有受伤友军。");return}let t=allies.sort((a,b)=>(a.u.hp/a.u.max)-(b.u.hp/b.u.max))[0];t.u.hp=Math.min(t.u.max,t.u.hp+4);energy[turn]-=2;log("圣愈术恢复 "+defs[t.u.type].name+" 4 点生命。");afterAction()}
  if(skill==="guard"){sound("magic");battleTitle("WARDING AEGIS");if(energy[turn]<2){log("能量不足：战阵守护需要 2 点能量。");return}let allies=[];board.forEach(row=>row.forEach(u=>{if(u&&u.side===turn&&u.type!=="core")allies.push(u)}));if(!allies.length)return;allies.sort((a,b)=>a.hp-b.hp)[0].guard+=4;energy[turn]-=2;log("战阵守护：一名友军获得 4 点护盾。");afterAction()}}
 function showHelp(){alert("【胜利条件】摧毁敌方王座核心（18生命）。\n【移动】选择己方单位，点击绿色格子移动。\n【攻击】点击红色格子攻击。远程单位可隔格攻击。\n【技能】奥术冲击：3能量，对最脆弱敌军造成5伤害；圣愈术：2能量，治疗最受伤友军4生命；战阵守护：2能量，为一名友军增加4护盾。\n【回合】每次行动或结束回合会恢复1点能量，最多6点。\n【注意】核心不可移动。单位移动不穿越其他单位。");}
