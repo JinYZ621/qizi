@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KMD·神域战争：王座之争</title>
+<style>
+:root{--bg:#090d18;--panel:#111a2b;--line:#293650;--gold:#e5bd69;--blue:#5fc7ed;--red:#ef6b70;--muted:#91a0b9}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -10%,#263452 0,#0b1221 48%,#070a12 100%);color:#edf2fb;font-family:system-ui,"Microsoft YaHei",sans-serif;min-height:100vh}
+header{padding:20px 24px;border-bottom:1px solid #293650;background:#080d18c9;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-weight:900;letter-spacing:2px;color:var(--gold)}.brand small{display:block;color:#8292ad;font-weight:500;letter-spacing:3px;font-size:10px}
+h1{font-size:clamp(20px,3vw,30px);margin:0}.sub{color:#9aa9c2;font-size:12px;margin-top:5px}
+button,select{background:#1a2940;border:1px solid #3b506f;color:#f4f6fb;border-radius:9px;padding:10px 13px;cursor:pointer;font-weight:650}
+button:hover{border-color:var(--gold);filter:brightness(1.13)}button.primary{background:linear-gradient(135deg,#a87932,#e1bf76);color:#1a1720;border:0}
+main{max-width:1400px;margin:auto;padding:22px;display:grid;grid-template-columns:minmax(280px,1fr) 310px;gap:20px}
+.arena,.side{background:linear-gradient(145deg,#141f32,#0e1626);border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 55px #0005}
+.arena{padding:18px}.arena-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.turn{font-weight:800;color:var(--gold)}.status{font-size:12px;color:var(--muted)}
+.board-wrap{max-width:760px;margin:auto;padding:10px;background:linear-gradient(135deg,#6b4c2d,#bd9860,#59402c);border-radius:12px;box-shadow:inset 0 0 0 2px #e0bc7b55,0 12px 30px #0008}
+.board{display:grid;grid-template-columns:repeat(8,1fr);aspect-ratio:1;background-color:#b99a69;background-image:linear-gradient(#493b2b33 1px,transparent 1px),linear-gradient(90deg,#493b2b33 1px,transparent 1px);background-size:12.5% 12.5%;border:2px solid #4a3828}
+.cell{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;border:1px solid #5c493444;cursor:pointer;color:#201b19}
+.cell:nth-child(16n+1),.cell:nth-child(16n+3),.cell:nth-child(16n+5),.cell:nth-child(16n+7){background:#d5b78322}
+.cell.selected{background:#f5d77a99!important;box-shadow:inset 0 0 0 3px #fff1a9}
+.cell.move::after{content:"";position:absolute;width:22%;height:22%;border-radius:50%;background:#1cbd8b;box-shadow:0 0 12px #1cbd8b;opacity:.9}
+.cell.attack{background:#d34b4b88!important;box-shadow:inset 0 0 0 3px #ff7d7d}
+.cell .coord{position:absolute;left:3px;top:2px;font-size:8px;color:#392d21;opacity:.55}
+  .piece{width:78%;height:78%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #f0d89a;box-shadow:0 3px 7px #0009,inset 0 0 10px #fff3;font-size:clamp(16px,3vw,27px);line-height:1;position:relative;z-index:1}
+.piece.blue{background:radial-gradient(circle at 35% 25%,#477e9e,#142c48 75%);color:#dff8ff;border-color:#7bd8f4}
+.piece.red{background:radial-gradient(circle at 35% 25%,#a64c50,#481c2a 75%);color:#ffe3d4;border-color:#ff9990}
+.piece .hp{font-size:9px;margin-top:3px;font-weight:900}.piece .mini{font-size:8px;opacity:.85;margin-top:2px}
+.side{padding:17px;display:flex;flex-direction:column;gap:15px}.section-title{font-size:12px;color:var(--gold);letter-spacing:2px;font-weight:900;margin-bottom:8px}
+.player{padding:12px;border:1px solid var(--line);border-radius:11px;background:#0b1423}.player.active{border-color:var(--gold);box-shadow:0 0 0 1px #e5bd6940}.player b{display:flex;justify-content:space-between}.bar{height:6px;background:#26344b;border-radius:9px;margin-top:9px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,#3ca5cf,#8be3f6)}
+.stats{font-size:12px;color:#a9b7ca;margin-top:7px;display:flex;justify-content:space-between}
+.info{background:#0b1423;border:1px solid var(--line);border-radius:11px;padding:12px;min-height:108px;font-size:13px;color:#b9c6d8;line-height:1.65}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions button{font-size:12px;padding:10px 6px}.log{height:150px;overflow:auto;background:#0a111e;border:1px solid var(--line);border-radius:10px;padding:9px;font-size:11px;color:#9eacc1;line-height:1.7}.log div{border-bottom:1px solid #ffffff0a;padding:2px 0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;color:#aebbd0;font-size:11px}.legend span{display:flex;align-items:center;gap:5px}.dot{width:9px;height:9px;border-radius:50%}
+.modal{position:fixed;inset:0;background:#050914eF;display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}.modal-card{width:min(520px,100%);background:linear-gradient(145deg,#1b2940,#0e1728);border:1px solid #65728a;border-radius:18px;padding:26px;box-shadow:0 20px 80px #000b}.modal h2{color:var(--gold);margin-top:0}.modal p{color:#b6c2d4;line-height:1.7}.modal .choices{display:grid;gap:10px;margin-top:18px}.modal .choices button{text-align:left;padding:14px}
+footer{text-align:center;color:#65748e;font-size:11px;padding:0 15px 22px}
+@media(max-width:850px){main{grid-template-columns:1fr;padding:12px}.side{display:grid;grid-template-columns:1fr 1fr}.side .full{grid-column:1/-1}.arena{padding:10px}.board-wrap{padding:5px}}
+@media(max-width:480px){header{padding:14px}.side{display:flex}.piece .hp{font-size:8px}.cell .coord{display:none}}
+/* === KMD 动态战场效果升级 === */
+@keyframes pieceEnter{0%{transform:scale(.45) rotate(-18deg);opacity:.25;filter:brightness(2)}70%{transform:scale(1.12) rotate(4deg)}100%{transform:scale(1);opacity:1;filter:none}}
+@keyframes selectedPulse{0%,100%{box-shadow:0 0 0 2px #ffe69a,0 0 10px #f6ce69}50%{box-shadow:0 0 0 5px #ffe69a88,0 0 24px #f6ce69}}
+@keyframes moveGlow{0%,100%{box-shadow:0 0 8px #20d7a2}50%{box-shadow:0 0 22px #20ffd0}}
+@keyframes attackFlash{0%{filter:brightness(1)}25%{filter:brightness(2.8) saturate(1.8)}100%{filter:brightness(1)}}
+@keyframes boardShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+@keyframes aura{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:.9;transform:scale(1.25)}}
+@keyframes starDrift{from{transform:translateY(0);opacity:.15}50%{opacity:.6}to{transform:translateY(-18px);opacity:.15}}
+.piece{animation:pieceEnter .28s cubic-bezier(.2,.8,.2,1);transition:transform .18s,filter .18s}
+.cell:has(.piece):hover .piece{transform:translateY(-3px) scale(1.05);filter:brightness(1.2)}
+.cell.selected .piece{animation:selectedPulse 1.15s infinite}
+.cell.move::after{animation:moveGlow 1.1s infinite}
+.cell.attack .piece{animation:attackFlash .55s infinite}
+.board-wrap{position:relative;overflow:hidden;transition:filter .2s}
+.board-wrap::before{content:"";pointer-events:none;position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,#fff2,transparent 60%);opacity:0;z-index:2}
+.board-wrap.skill-flash::before{animation:skillFlash .75s ease-out}
+@keyframes skillFlash{0%{opacity:.95;background:radial-gradient(circle at 50% 50%,#fff9,#71dfff88 22%,transparent 68%)}100%{opacity:0}}
+.board-wrap.shake{animation:boardShake .32s}
+.cell.skill-target{background:#8e74e7aa!important;box-shadow:inset 0 0 0 3px #d6c4ff}
+.piece.blue{box-shadow:0 3px 7px #0009,inset 0 0 10px #fff3,0 0 13px #3db9ef33}
+.piece.red{box-shadow:0 3px 7px #0009,inset 0 0 10px #fff3,0 0 13px #ef4c5a33}
+.player.active{animation:playerPulse 1.8s infinite}
+@keyframes playerPulse{0%,100%{box-shadow:0 0 0 0 #e5bd6900}50%{box-shadow:0 0 0 3px #e5bd6925}}
+.log div:first-child{color:#f1d28a;animation:logIn .25s ease-out}
+@keyframes logIn{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+button:active{transform:translateY(1px)}
+  
+
+
+/* === 战斗演出 II：冲锋、弹道、命中、阵亡、符文环境 === */
+.arena{position:relative;overflow:hidden}
+.arena:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 20%,#ffffff05 48%,transparent 70%);background-size:220% 100%;animation:arenaSheen 9s linear infinite}
+@keyframes arenaSheen{from{background-position:200% 0}to{background-position:-200% 0}}
+.battle-fx{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
+.fx-orb{position:fixed;width:12px;height:12px;border-radius:50%;pointer-events:none;filter:blur(.3px);box-shadow:0 0 15px currentColor;animation:orbFly .48s ease-out forwards}
+@keyframes orbFly{0%{transform:translate(0,0) scale(.6);opacity:0}12%{opacity:1}85%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1.4);opacity:0}}
+.fx-ring{position:fixed;width:24px;height:24px;border:3px solid #fff;border-radius:50%;transform:translate(-50%,-50%);animation:ringPop .5s ease-out forwards}
+@keyframes ringPop{to{width:100px;height:100px;opacity:0;border-width:1px}}
+.fx-number{position:fixed;font-weight:1000;font-size:22px;text-shadow:0 2px 8px #000;transform:translate(-50%,-50%);animation:numberRise .9s ease-out forwards}
+@keyframes numberRise{0%{opacity:0;transform:translate(-50%,0) scale(.6)}15%{opacity:1;transform:translate(-50%,-10px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-62px) scale(.9)}}
+.piece.is-moving{z-index:10;filter:brightness(1.5) drop-shadow(0 0 12px #fff);transform:scale(1.18)}
+.piece.is-fading{animation:pieceVanish .55s ease-in forwards!important}
+@keyframes pieceVanish{0%{transform:scale(1);opacity:1;filter:brightness(1)}45%{transform:scale(1.25);filter:brightness(2.5)}100%{transform:scale(.2) rotate(35deg);opacity:0;filter:blur(5px)}}
+.board-wrap.magic{filter:brightness(1.18) saturate(1.3)}
+.fx-label{position:fixed;left:50%;top:22%;transform:translate(-50%,-50%);font-weight:950;letter-spacing:4px;font-size:clamp(20px,4vw,38px);color:#fff2bd;text-shadow:0 0 12px #e3ae47,0 0 35px #ff7b38;animation:labelBurst 1s ease-out forwards;white-space:nowrap}
+@keyframes labelBurst{0%{opacity:0;letter-spacing:14px;filter:blur(8px)}20%{opacity:1;letter-spacing:5px;filter:none}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-85%)}}
+
+
+/* === KMD 视觉升级 III：立体棋子、战场氛围、阵营面板、战役地图 === */
+body{background:
+ radial-gradient(ellipse at 12% 25%,#16324b66 0,transparent 34%),
+ radial-gradient(ellipse at 88% 20%,#57233255 0,transparent 32%),
+ radial-gradient(ellipse at 50% 110%,#9a6b2b20 0,transparent 42%),
+ linear-gradient(145deg,#060a13,#10192b 52%,#080b14)}
+header{position:relative;isolation:isolate;background:linear-gradient(90deg,#070d19f2,#101b2df0,#090e1bf2);box-shadow:0 8px 35px #0008}
+header:after{content:"";position:absolute;inset:0;z-index:-1;opacity:.16;background:repeating-linear-gradient(115deg,transparent 0 32px,#a9c7ed 33px 34px,transparent 35px 68px)}
+.arena{background:linear-gradient(145deg,#18253aee,#0b1424f2);border-color:#52617a;box-shadow:0 25px 70px #0009,inset 0 1px #ffffff12}
+.board-wrap{background:linear-gradient(135deg,#332b27,#d5b477 16%,#705033 50%,#d2ad70 82%,#382b24);box-shadow:0 18px 45px #000b,inset 0 0 0 2px #ffe3a266,inset 0 0 22px #160e09}
+.board{background-color:#b99a69;background-image:linear-gradient(45deg,#3c2c1b14 25%,transparent 25%,transparent 75%,#3c2c1b14 75%),linear-gradient(45deg,#3c2c1b14 25%,transparent 25%,transparent 75%,#3c2c1b14 75%);background-position:0 0,calc(100% / 8) calc(100% / 8);background-size:calc(100% / 4) calc(100% / 4);border-color:#3c2c1e}
+.piece{transform:perspective(450px) rotateX(8deg);border-width:2px 2px 4px;border-radius:44% 44% 48% 48%;box-shadow:0 6px 0 #07101c,0 9px 12px #000b,inset 0 3px 5px #ffffff80,inset 0 -7px 10px #0007,0 0 18px #fff2;font-family:Georgia,serif}
+.piece.blue{background:radial-gradient(circle at 32% 20%,#b8efff,#3a86aa 30%,#173450 76%);text-shadow:0 2px 4px #05253a; border-color:#b6f1ff}
+.piece.red{background:radial-gradient(circle at 32% 20%,#ffc3a8,#b34b52 30%,#4b1828 76%);text-shadow:0 2px 4px #3a0710;border-color:#ffc0a6}
+.piece .hp{font-family:system-ui,sans-serif;background:#07101dcc;border-radius:10px;padding:2px 5px;color:#fff}
+.cell{background-image:linear-gradient(135deg,#fff2,#00000008)}
+.cell:nth-child(odd){box-shadow:inset 0 0 14px #fff1}
+.faction-banner{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px auto 13px;max-width:760px}
+.faction-hero{display:flex;align-items:center;gap:9px;min-width:0;padding:9px 12px;border:1px solid;border-radius:11px;flex:1;background:#07111dcc;box-shadow:0 7px 20px #0005}
+.blue-hero{border-color:#5fc7ed66}.red-hero{border-color:#ef6b7066;justify-content:flex-end;text-align:right}
+.hero-emblem{width:37px;height:37px;display:grid;place-items:center;border-radius:50%;font-size:23px;background:radial-gradient(circle,#ffffff33,#ffffff08);box-shadow:0 0 18px currentColor}
+  
+
+.blue-hero .hero-emblem{color:#83e1ff}.red-hero .hero-emblem{color:#ff9990}
+.faction-hero b{display:block;font-size:12px;letter-spacing:1px}.faction-hero small{display:block;color:#8293ad;font-size:8px;letter-spacing:1px;margin-top:3px}.faction-hero i{font-style:normal;color:var(--gold);font-size:17px}
+.battle-vs{font:900 12px Georgia;color:#e5bd69;text-shadow:0 0 12px #f3b84d;padding:0 2px}
+.side{background:linear-gradient(150deg,#18253a,#0a1220);border-color:#455672}
+.player{position:relative;overflow:hidden}.player:after{content:"";position:absolute;right:-25px;top:-35px;width:100px;height:100px;border:1px solid #ffffff14;border-radius:50%;box-shadow:0 0 0 13px #ffffff08,0 0 0 26px #ffffff05;pointer-events:none}
+.campaign-modal{display:none;position:fixed;inset:0;z-index:40;background:#030711ed;backdrop-filter:blur(10px);padding:18px;align-items:center;justify-content:center}
+.campaign-modal.open{display:flex}
+.campaign-panel{width:min(900px,100%);max-height:92vh;overflow:auto;border:1px solid #667894;border-radius:20px;padding:22px;background:radial-gradient(ellipse at 50% 0,#243b5c,#101a2d 55%,#090f1d);box-shadow:0 30px 100px #000d}
+.campaign-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px}.campaign-head h2{font-size:26px;margin:8px 0 4px;color:#f1d18b}.campaign-head p{color:#aab9ce;font-size:13px;margin:0}
+.campaign-map{position:relative;display:flex;justify-content:space-around;align-items:center;gap:8px;min-height:185px;margin:18px 0;padding:18px 5px;background:radial-gradient(ellipse at 50% 50%,#31476b88,transparent 70%);border:1px solid #ffffff12;border-radius:15px;overflow:hidden}
+.map-route{position:absolute;left:14%;right:14%;top:50%;height:3px;background:linear-gradient(90deg,#65cbed,#d9b66d,#e66b78);box-shadow:0 0 15px #8bd8ff;transform:translateY(-50%)}
+.map-node{z-index:1;display:flex;flex-direction:column;align-items:center;gap:6px;width:29%;min-height:110px;padding:12px 5px;background:linear-gradient(145deg,#1c2b43,#0b1423);border:1px solid #596b85;border-radius:13px;white-space:normal;box-shadow:0 8px 25px #0008}
+.map-node span{display:grid;place-items:center;width:39px;height:39px;border-radius:50%;border:2px solid #a9bbd0;background:#17263b;color:#f5d995;font:900 16px Georgia;box-shadow:0 0 18px #e5bd6940}
+.map-node b{font-size:12px}.map-node small{font-size:9px;color:#91a3bc}.map-node.active{border-color:#e5bd69;box-shadow:0 0 0 2px #e5bd6933,0 10px 30px #0009}.map-node.active span{background:#8a6733;border-color:#ffe4a2}
+.mission-detail{padding:18px;border:1px solid #d8b66a55;border-radius:13px;background:linear-gradient(120deg,#1b2b43,#111a2b)}
+.mission-kicker{font-size:10px;letter-spacing:2px;color:#e5bd69}.mission-detail h3{margin:6px 0;color:#f4dfb2;font-size:21px}.mission-detail p{color:#b6c5d8;font-size:13px;line-height:1.7}.mission-meta{display:flex;gap:16px;flex-wrap:wrap;color:#8fa4bf;font-size:11px;margin:12px 0 16px}
+.mission-detail button{min-width:150px}.campaign-note{font-size:10px;color:#7588a4;margin-top:12px}
+  
+@media(max-width:560px){.faction-hero{padding:7px 6px;gap:5px}.hero-emblem{width:29px;height:29px;font-size:18px}.faction-hero b{font-size:10px}.faction-hero small{font-size:7px}.faction-hero i{display:none}.campaign-panel{padding:14px}.campaign-head h2{font-size:21px}.map-node{min-height:100px}.map-node small{font-size:8px}}
+
+
+/* === 战役系统 IV：章节解锁、难度、敌军成长、进度保存 === */
+.difficulty-label{display:flex;align-items:center;gap:10px;color:#b7c7dc;font-size:12px;margin:0 0 14px}
+.difficulty-label select{padding:8px 12px;min-width:120px}
+.map-node.locked{opacity:.38;filter:grayscale(.85);cursor:not-allowed;border-style:dashed}
+.map-node.cleared{border-color:#72cda2}
+.map-node.cleared span{background:#22563f;border-color:#8fe3b5;color:#e4ffef}
+.campaign-progress-line{height:5px;border-radius:8px;background:#26364d;overflow:hidden;margin-top:8px}
+.campaign-progress-line i{display:block;height:100%;background:linear-gradient(90deg,#5fc7ed,#e5bd69);transition:width .3s}
+.difficulty-label select:focus{outline:2px solid #e5bd69}.reset-campaign{margin-top:10px;padding:7px 10px;font-size:10px;color:#a9b7ca;background:#111b2b;border-color:#394b64}
+
+</style></head>
+  
+<body>
+<header><div><div class="brand">KMD 卡米达 <small>FANTASY TACTICS DIVISION</small></div></div><div><h1>神域战争：王座之争</h1><div class="sub">原创奇幻战争策略棋 · DEMO 01</div></div><div><button onclick="toggleSound()" id="soundBtn">🔊 音效开</button> <button onclick="openCampaign()">🗺 战役地图</button> <button onclick="showHelp()">规则手册</button> <button onclick="newGame()">重新开战</button></div></header>
+<main><section class="arena"><div class="arena-top"><div><div class="turn" id="turnText">圣辉联军回合</div><div class="status" id="hint">选择己方单位，再选择高亮格子行动</div></div><div><select id="mode" onchange="newGame()"><option value="ai">单人 · 对抗深渊 AI</option><option value="local">双人 · 本地对战</option></select></div></div>
+<div class="faction-banner">
+ <div class="faction-hero blue-hero"><span class="hero-emblem">♛</span><div><b>圣辉联军</b><small>THE LUMINOUS ALLIANCE</small></div><i>✦</i></div>
+ <div class="battle-vs">VS</div>
+ <div class="faction-hero red-hero"><span class="hero-emblem">☠</span><div><b>深渊军团</b><small>THE ABYSS LEGION</small></div><i>✧</i></div>
+</div>
+<div class="board-wrap"><div class="board" id="board"></div></div><div class="legend" style="margin-top:13px"><span><i class="dot" style="background:#5fc7ed"></i>圣辉联军</span><span><i class="dot" style="background:#ef6b70"></i>深渊军团</span><span>🟢 可移动</span><span>🔴 可攻击</span></div></section>
+<aside class="side">
+<div class="full"><div class="section-title">战场态势</div><div class="player active" id="p0"><b>✦ 圣辉联军 <span>蓝方</span></b><div class="bar"><i id="bar0" style="width:100%"></i></div><div class="stats"><span id="core0">王座核心 HP 18/18</span><span id="energy0">能量 3</span></div></div><div class="player" id="p1" style="margin-top:8px"><b>☠ 深渊军团 <span>红方</span></b><div class="bar"><i id="bar1" style="width:100%;background:linear-gradient(90deg,#a63d4b,#ff9b83)"></i></div><div class="stats"><span id="core1">王座核心 HP 18/18</span><span id="energy1">能量 3</span></div></div></div>
+<div><div class="section-title">单位情报</div><div class="info" id="unitInfo">选择棋盘上的单位查看属性、技能与行动范围。</div></div>
+<div><div class="section-title">战术指令</div><div class="actions"><button onclick="useSkill('burst')">✦ 奥术冲击</button><button onclick="useSkill('heal')">✚ 圣愈术</button><button onclick="useSkill('guard')">⬟ 战阵守护</button><button onclick="endTurn()">结束回合 ↗</button></div><div class="sub" style="margin-top:8px">技能消耗能量；每回合恢复 1 点，最多 6 点。</div></div>
+  
+<div class="full"><div class="section-title">战斗记录</div><div class="log" id="log"><div>系统：神域战场已载入。</div><div>系统：击败敌方王座核心即可获胜。</div></div></div>
+</aside></main><footer>KMD卡米达 · 虚构游戏工作室作品 | 本 Demo 为原创规则演示版本</footer>
+<div class="modal" id="startModal"><div class="modal-card"><div class="brand">KMD · WAR OF DOMINION</div><h2>神域战争：王座之争</h2><p>创世王座再度苏醒。选择你的战场模式，指挥圣辉联军迎战深渊军团。击破敌方王座核心，夺取神域统治权。</p><div class="choices"><button class="primary" onclick="start('ai')">⚔ 单人战役 · 挑战深渊 AI</button><button onclick="start('local')">♟ 本地双人 · 同屏对决</button></div><p style="font-size:11px">提示：点击己方单位查看可行动格。技能需要选择目标；王座核心不可移动。</p></div></div>
+<div class="campaign-modal" id="campaignModal" aria-hidden="true">
+ <div class="campaign-panel">
+  <div class="campaign-head"><div><div class="brand">KMD · DOMINION CAMPAIGN</div><h2>神域远征 · 战役地图</h2><p>沿着古老星脉推进，直面深渊军团的统治核心。</p></div><button onclick="closeCampaign()">✕</button></div>
+  <div class="campaign-map">
+   <div class="map-route"></div>
+   <button class="map-node active" data-mission="0" onclick="selectMission(0)"><span>Ⅰ</span><b>破晓前线</b><small>边境集结 · 新手战场</small></button>
+   <button class="map-node" data-mission="1" onclick="selectMission(1)"><span>Ⅱ</span><b>灰烬峡谷</b><small>深入敌境 · 精英遭遇</small></button>
+   <button class="map-node" data-mission="2" onclick="selectMission(2)"><span>Ⅲ</span><b>王座圣殿</b><small>最终决战 · 核心攻坚</small></button>
+  </div>
+  <div class="mission-detail" id="missionDetail"><div class="mission-kicker">MISSION 01 / CHAPTER I</div><h3>破晓前线</h3><p>圣辉联军在边境建立第一座前哨。击退深渊军团的先锋，守住通往神域的道路。</p><div class="mission-meta"><span>✦ 目标：摧毁敌方王座核心</span><span>⚔ 模式：单人 AI</span></div><label class="difficulty-label">挑战难度 <select id="campaignDifficulty"><option value="normal">标准</option><option value="hard">困难</option><option value="nightmare">噩梦</option></select></label><button class="primary" onclick="launchMission()">进入战场</button></div>
+  <div class="campaign-note" id="campaignProgress">战役进度：0 / 3 章节完成。完成当前章节即可解锁下一章。</div><button class="reset-campaign" onclick="resetCampaign()">重置战役进度</button>
+ </div>
+</div>
+<div class="battle-fx" id="battleFx"></div>
+<script>
+  
+let soundOn=true,audioCtx=null;
+function sound(type){if(!soundOn)return;try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();let o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);let now=audioCtx.currentTime;let f=type==="hit"?110:type==="magic"?520:type==="move"?260:type==="win"?740:180;o.type=type==="magic"?"sawtooth":"triangle";o.frequency.setValueAtTime(f,now);o.frequency.exponentialRampToValueAtTime(Math.max(45,f*.42),now+.18);g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(type==="hit"?.12:.065,now+.015);g.gain.exponentialRampToValueAtTime(.0001,now+.24);o.start(now);o.stop(now+.25)}catch(e){}}
+function toggleSound(){soundOn=!soundOn;$("soundBtn").textContent=soundOn?"🔊 音效开":"🔇 音效关";if(soundOn)sound("magic")}
+function cellCenter(r,c){let el=$("board").children[r*8+c];if(!el)return{x:innerWidth/2,y:innerHeight/2};let b=el.getBoundingClientRect();return{x:b.left+b.width/2,y:b.top+b.height/2}}
+function particle(x,y,color="#ffe08a",dx=0,dy=-30){let e=document.createElement("i");e.className="fx-orb";e.style.left=x+"px";e.style.top=y+"px";e.style.color=color;e.style.background=color;e.style.setProperty("--dx",dx+"px");e.style.setProperty("--dy",dy+"px");$("battleFx").append(e);setTimeout(()=>e.remove(),550)}
+function impact(r,c,color="#ffe08a",label=""){let q=cellCenter(r,c),ring=document.createElement("i");ring.className="fx-ring";ring.style.left=q.x+"px";ring.style.top=q.y+"px";ring.style.borderColor=color;$("battleFx").append(ring);setTimeout(()=>ring.remove(),600);for(let i=0;i<9;i++){let a=Math.PI*2*i/9;particle(q.x,q.y,color,Math.cos(a)*42,Math.sin(a)*42)}if(label){let n=document.createElement("b");n.className="fx-number";n.style.left=q.x+"px";n.style.top=(q.y-10)+"px";n.style.color=color;n.textContent=label;$("battleFx").append(n);setTimeout(()=>n.remove(),950)}}
+function projectile(r1,c1,r2,c2,color="#70dfff"){let a=cellCenter(r1,c1),b=cellCenter(r2,c2),e=document.createElement("i");e.className="fx-orb";e.style.left=a.x+"px";e.style.top=a.y+"px";e.style.width="16px";e.style.height="16px";e.style.background=color;e.style.color=color;e.style.setProperty("--dx",(b.x-a.x)+"px");e.style.setProperty("--dy",(b.y-a.y)+"px");e.style.animationDuration=".42s";$("battleFx").append(e);setTimeout(()=>{e.remove();impact(r2,c2,color)},430)}
+function battleTitle(t){let e=document.createElement("div");e.className="fx-label";e.textContent=t;$("battleFx").append(e);setTimeout(()=>e.remove(),1050)}
+
+const missions=[
+ {name:"破晓前线",tagline:"边境集结 · 新手战场",kicker:"MISSION 01 / CHAPTER I",desc:"圣辉联军在边境建立第一座前哨。击退深渊军团的先锋，守住通往神域的道路。",goal:"摧毁敌方王座核心"},
+ {name:"灰烬峡谷",tagline:"深入敌境 · 精英遭遇",kicker:"MISSION 02 / CHAPTER II",desc:"峡谷深处的古代星脉已经被污染。深入敌境，粉碎深渊军团的防线。",goal:"突破敌军防线并摧毁核心"},
+ {name:"王座圣殿",tagline:"最终决战 · 王座攻坚",kicker:"MISSION 03 / FINAL CHAPTER",desc:"最终圣殿的大门已经开启。直面深渊统帅，结束漫长的王座战争。",goal:"击败守卫王座的全部力量"}
+];
+let selectedMission=0,currentMission=0,campaignDifficulty="normal";
+let campaignState={cleared:[]};
+try{const saved=JSON.parse(localStorage.getItem("kmd_dominion_campaign")||"null");if(saved&&Array.isArray(saved.cleared))campaignState=saved;}catch(e){}
+function missionUnlocked(i){return i===0||campaignState.cleared.includes(i-1);}
+function saveCampaign(){try{localStorage.setItem("kmd_dominion_campaign",JSON.stringify(campaignState));}catch(e){}}
+function refreshCampaign(){document.querySelectorAll(".map-node").forEach((n,i)=>{n.classList.toggle("locked",!missionUnlocked(i));n.classList.toggle("cleared",campaignState.cleared.includes(i));n.classList.toggle("active",i===selectedMission);n.querySelector("small").textContent=campaignState.cleared.includes(i)?"✓ 已完成":(!missionUnlocked(i)?"🔒 尚未解锁":missions[i].tagline);});let done=campaignState.cleared.length;$("campaignProgress").innerHTML=`战役进度：${done} / 3 章节完成<div class="campaign-progress-line"><i style="width:${done/3*100}%"></i></div>`;}
+function openCampaign(){refreshCampaign();$("campaignModal").classList.add("open");$("campaignModal").setAttribute("aria-hidden","false");}
+function closeCampaign(){ $("campaignModal").classList.remove("open");$("campaignModal").setAttribute("aria-hidden","true");}
+function selectMission(i){if(!missionUnlocked(i)){battleTitle("CHAPTER LOCKED");return;}selectedMission=i;refreshCampaign();let m=missions[i];$("missionDetail").innerHTML=`<div class="mission-kicker">${m.kicker}</div><h3>${m.name}</h3><p>${m.desc}</p><div class="mission-meta"><span>✦ 目标：${m.goal}</span><span>⚔ 模式：单人 AI</span></div><label class="difficulty-label">挑战难度 <select id="campaignDifficulty"><option value="normal">标准</option><option value="hard">困难</option><option value="nightmare">噩梦</option></select></label><button class="primary" onclick="launchMission()">进入战场</button>`;}
+function launchMission(){campaignDifficulty=$("campaignDifficulty")?.value||"normal";currentMission=selectedMission;closeCampaign();$("mode").value="ai";init();prepareMission();log("战役章节："+missions[currentMission].name+"。"+missions[currentMission].desc);log("挑战难度："+({normal:"标准",hard:"困难",nightmare:"噩梦"}[campaignDifficulty])+"。");battleTitle(missions[currentMission].name.toUpperCase());}
+function prepareMission(){let stage=currentMission;let bonus=stage===0?0:stage===1?2:4;let atk=stage===0?0:stage===1?1:2;let scale=campaignDifficulty==="normal"?1:campaignDifficulty==="hard"?1.25:1.55;
+board.forEach(row=>row.forEach(u=>{if(u&&u.side===1){u.max+=Math.round(bonus*scale);u.hp=u.max;u._atkBonus=Math.round(atk*scale);}}));
+if(stage>=1){if(board[2][2]===null)board[2][2]=unit("bone",1);if(board[2][5]===null)board[2][5]=unit("hunter",1);}
+if(stage>=2){if(board[1][3]===null)board[1][3]=unit("nightmare",1);if(board[2][4]===null)board[2][4]=unit("witch",1);let core=board[0].find(u=>u&&u.type==="core");if(core){core.max+=Math.round(4*scale);core.hp=core.max;}}
+render();}
+function completeMission(){if(!campaignState.cleared.includes(currentMission))
+  campaignState.cleared.push(currentMission);campaignState.cleared.sort();saveCampaign();refreshCampaign();battleTitle("CHAPTER CLEARED");log("战役记录已保存："+missions[currentMission].name+" 完成。");}\nfunction resetCampaign(){if(!confirm("确定清除本机保存的战役进度吗？"))return;campaignState={cleared:[]};saveCampaign();selectedMission=0;selectMission(0);refreshCampaign();}
+
+const defs={
+ core:{name:"王座核心",icon:"♛",hp:18,atk:3,range:1,move:0,desc:"阵营命脉。不可移动，核心被摧毁即告失败。"},
+ knight:{name:"圣骑士",icon:"⚔",hp:10,atk:4,range:1,move:1,desc:"前线主力。相邻攻击，坚韧可靠。"},
+ ranger:{name:"星弦游侠",icon:"➶",hp:6,atk:3,range:3,move:2,desc:"远程输出。可隔空打击，但近身较脆弱。"},
+ priest:{name:"辉光祭司",icon:"✚",hp:7,atk:1,range:1,move:2,desc:"治疗辅助。可为邻近友军恢复生命。"},
+ guard:{name:"圣盾守卫",icon:"⬟",hp:12,atk:2,range:1,move:1,desc:"重装防御。高生命，适合守护核心。"},
+ gryphon:{name:"狮鹫骑士",icon:"♞",hp:8,atk:3,range:1,move:3,desc:"高速机动。擅长绕后与突袭。"},
+ demon:{name:"深渊魔将",icon:"☠",hp:10,atk:4,range:1,move:1,desc:"深渊主力。近战压制能力强。"},
+ hunter:{name:"猎魂者",icon:"弓",hp:6,atk:3,range:3,move:2,desc:"远程猎杀。优先消灭敌方辅助单位。"},
+ witch:{name:"诅咒巫师",icon:"♜",hp:7,atk:2,range:2,move:2,desc:"暗影施法者。攻击距离较远。"},
+ bone:{name:"骸骨兵",icon:"♟",hp:8,atk:2,range:1,move:1,desc:"廉价防线。以数量压迫战场。"},
+ nightmare:{name:"梦魇兽",icon:"♞",hp:8,atk:4,range:1,move:3,desc:"高速突击单位。攻击凶猛但防御一般。"}
+};
+let board=[],turn=0,selected=null,gameOver=false,energy=[3,3],mode="ai",units=0,guarded={};
+const $=id=>document.getElementById(id);
+function unit(type,side){return {id:++units,type,side,hp:defs[type].hp,max:defs[type].hp,guard:0}}
+  
+function init(){
+ board=Array.from({length:8},()=>Array(8).fill(null));turn=0;selected=null;gameOver=false;energy=[3,3];guarded={};mode=$("mode").value;
+ const rows=[["core","guard","knight","gryphon","priest","ranger","guard","knight"],["demon","bone","demon","nightmare","witch","hunter","bone","demon"]];
+ rows[0].forEach((t,c)=>board[7][c]=unit(t,0));board[6][1]=unit("ranger",0);board[6][6]=unit("gryphon",0);
+ rows[1].forEach((t,c)=>board[0][c]=unit(t,1));board[1][1]=unit("hunter",1);board[1][6]=unit("nightmare",1);
+ log("新战局开始：圣辉联军先手。");render();
+}
+function start(m){$("mode").value=m; $("startModal").style.display="none";init()}
+function newGame(){if(!$("startModal"))return;$("startModal").style.display="none";init()}
+function log(s){let d=document.createElement("div");d.textContent=s;$("log").prepend(d)}
+function inside(r,c){return r>=0&&r<8&&c>=0&&c<8}
+function moves(u,r,c){
+ let out=[];if(u.type==="core")return out;let d=defs[u.type];
+ for(let rr=0;rr<8;rr++)for(let cc=0;cc<8;cc++){let dist=Math.max(Math.abs(rr-r),Math.abs(cc-c));if(dist===0||dist>d.move)continue;if(board[rr][cc]&&board[rr][cc].side===u.side)continue;
+ // movement is king-step style; ranged units may move only within move range
+ out.push([rr,cc]);}
+ return out;
+  
+}
+function targets(u,r,c){let out=[];let range=defs[u.type].range;for(let rr=0;rr<8;rr++)for(let cc=0;cc<8;cc++){let dist=Math.max(Math.abs(rr-r),Math.abs(cc-c));if(dist>0&&dist<=range&&board[rr][cc]&&board[rr][cc].side!==u.side)out.push([rr,cc])}return out}
+function render(){
+ $("board").innerHTML="";
+ for(let r=0;r<8;r++)for(let c=0;c<8;c++){let cell=document.createElement("div");cell.className="cell";let u=board[r][c];
+ if(selected){let su=board[selected[0]][selected[1]];if(su){let mv=moves(su,...selected),tg=targets(su,...selected);if(mv.some(x=>x[0]===r&&x[1]===c))cell.classList.add("move");if(tg.some(x=>x[0]===r&&x[1]===c))cell.classList.add("attack")}}
+ if(selected&&selected[0]===r&&selected[1]===c)cell.classList.add("selected");
+ let co=document.createElement("span");co.className="coord";co.textContent=String.fromCharCode(65+c)+(8-r);cell.append(co);
+ if(u){let p=document.createElement("div");p.className="piece "+(u.side===0?"blue":"red");p.innerHTML=`<span>${defs[u.type].icon}</span><span class="hp">${u.hp}/${u.max}</span>${u.guard?'<span class="mini">护盾 '+u.guard+'</span>':''}`;cell.append(p)}
+ cell.onclick=()=>clickCell(r,c);$("board").append(cell)}
+ $("turnText").textContent=turn===0?"圣辉联军回合":"深渊军团回合";$("hint").textContent=gameOver?"战斗结束":(mode==="ai"&&turn===1?"深渊 AI 正在思考":"选择己方单位，再选择高亮格子行动");
+ [0,1].forEach(s=>{let core=board.flat().find(x=>x&&x.side===s&&x.type==="core");let hp=core?core.hp:0;$("core"+s).textContent=`王座核心 HP ${hp}/18`;$("energy"+s).textContent="能量 "+energy[s];$("bar"+s).style.width=(hp/18*100)+"%";$("p"+s).classList.toggle("active",turn===s)});
+ if(selected){let u=board[selected[0]][selected[1]];if(u)$("unitInfo").innerHTML=`<b style="color:${u.side===0?'#77d8f4':'#ff9b90'}">${defs[u.type].icon} ${defs[u.type].name}</b><br>${defs[u.type].desc}<br>生命：${u.hp}/${u.max}　攻击：${defs[u.type].atk}<br>移动：${defs[u.type].move} 格　攻击距离：${defs[u.type].range} 格`}else $("unitInfo").textContent="选择棋盘上的单位查看属性、技能与行动范围。";
+}
+  
+function clickCell(r,c){if(gameOver||(mode==="ai"&&turn===1))return;let u=board[r][c];
+ if(selected){let [sr,sc]=selected,me=board[sr][sc];if(u&&u.side===turn){selected=[r,c];render();return}
+ if(!u&&moves(me,sr,sc).some(x=>x[0]===r&&x[1]===c)){let from=cellCenter(sr,sc),to=cellCenter(r,c);let ghost=document.createElement("div");ghost.className="fx-orb";ghost.style.left=from.x+"px";ghost.style.top=from.y+"px";ghost.style.width="26px";ghost.style.height="26px";ghost.style.background=me.side===0?"#69dfff":"#ff7b83";ghost.style.setProperty("--dx",(to.x-from.x)+"px");ghost.style.setProperty("--dy",(to.y-from.y)+"px");ghost.style.animationDuration=".28s";$("battleFx").append(ghost);setTimeout(()=>ghost.remove(),320);sound("move");board[r][c]=me;board[sr][sc]=null;selected=null;log(`${defs[me.type].name} 移动至 ${String.fromCharCode(65+c)}${8-r}。`);afterAction();return}
+ if(u&&u.side!==turn&&targets(me,sr,sc).some(x=>x[0]===r&&x[1]===c)){attack(me,u,r,c);selected=null;afterAction();return}}
+ if(u&&u.side===turn){selected=[r,c];render()}else{selected=null;render()}}
+function attack(a,d,r,c){let source=board.flatMap((row,rr)=>row.map((u,cc)=>u===a?{r:rr,c:cc}:null)).find(Boolean);if(source&&defs[a.type].range>1)projectile(source.r,source.c,r,c,a.side===0?"#77e5ff":"#ff777f");else impact(r,c,a.side===0?"#8de8ff":"#ff8b87");sound("hit");$("board").parentElement.classList.remove("shake");void $("board").parentElement.offsetWidth;$("board").parentElement.classList.add("shake");let hitCell=$("board").children[r*8+c];if(hitCell){hitCell.classList.add("attack");setTimeout(()=>hitCell.classList.remove("attack"),650)}let damage=defs[a.type].atk+(a._atkBonus||0);if(a.type==="nightmare"&&Math.random()<.25)damage+=2;let blocked=Math.min(d.guard,damage);d.guard-=blocked;damage-=blocked;d.hp-=damage;if(damage>0)impact(r,c,a.side===0?"#a5eaff":"#ff9a91","-"+damage);log(`${defs[a.type].name} 攻击 ${defs[d.type].name}，造成 ${damage} 点伤害。`);if(d.hp<=0){log(`${defs[d.type].name} 被击败！`);battleTitle("UNIT DESTROYED");impact(r,c,"#fff0ba","✦");board[r][c]=null;if(d.type==="core"){gameOver=true;sound("win");battleTitle("VICTORY");if(turn===0&&mode==="ai")completeMission();setTimeout(()=>alert((turn===0?"圣辉联军":"深渊军团")+"赢得王座之争！"),80)}}}
+function afterAction(){energy[turn]=Math.min(6,energy[turn]+1);if(mode==="local")turn=1-turn;render();if(!gameOver&&mode==="ai"&&turn===0){turn=1;selected=null;render();setTimeout(aiTurn,550)}}
+function endTurn(){if(gameOver||(mode==="ai"&&turn===1))return;selected=null;energy[turn]=Math.min(6,energy[turn]+1);turn=1-turn;log((turn===0?"圣辉联军":"深渊军团")+"开始行动。");render();if(mode==="ai"&&turn===1)setTimeout(aiTurn,550)}
+function aiTurn(){if(gameOver)return;sound("move");let candidates=[];for(let r=0;r<8;r++)for(let c=0;c<8;c++){let u=board[r][c];if(!u||u.side!==1||u.type==="core")continue;for(let [rr,cc] of targets(u,r,c)){let target=board[rr][cc];let score=defs[u.type].atk+(target.type==="core"?100:defs[target.type].hp<=defs[u.type].atk?20:0);candidates.push({kind:"attack",u,r,c,rr,cc,score})}for(let [rr,cc] of moves(u,r,c)){let nearCor
+e=board.flat().some(x=>x&&x.side===0&&x.type==="core");let score=Math.random()*2+(7-rr)*.15;if(nearCore&&Math.abs(rr-7)+Math.abs(cc-0)<Math.abs(r-7)+Math.abs(c-0))score+=1;candidates.push({kind:"move",u,r,c,rr,cc,score})}}
+ if(!candidates.length){turn=0;render();return}candidates.sort((a,b)=>b.score-a.score);let act=candidates[0];if(act.kind==="attack")attack(act.u,board[act.rr][act.cc],act.rr,act.cc);else{board[act.rr][act.cc]=act.u;board[act.r][act.c]=null;log(`深渊军团：${defs[act.u.type].name} 调整阵位。`)}
+ energy[1]=Math.min(6,energy[1]+1);turn=0;render()}
+function useSkill(skill){$("board").parentElement.classList.remove("skill-flash");void $("board").parentElement.offsetWidth;$("board").parentElement.classList.add("skill-flash");if(gameOver||(mode==="ai"&&turn===1))return;if(skill==="burst"){sound("magic");battleTitle("ARCANE BLAST");$("board").parentElement.classList.add("magic");setTimeout(()=>$("board").parentElement.classList.remove("magic"),700);if(energy[turn]<3){log("能量不足：奥术冲击需要 3 点能量。");return}let enemies=[];board.forEach((row,r)=>row.forEach((u,c)=>{if(u&&u.side!==turn&&u.type!=="core")enemies.push({u,r,c})}));if(!enemies.length)return;let t=enemies.sort((a,b)=>a.u.hp-b.u.hp)[0];t.u.hp-=5;energy[turn]-=3;log("奥术冲击命中 "+defs[t.u.type].name+"，造成 5 点伤害。");if(t.u.hp<=0)board[t.r][t.c]=null;afterAction()}
+ if(skill==="heal"){sound("magic");battleTitle("HOLY RESTORATION");if(energy[turn]<2){log("能量不足：圣愈术需要 2 点能量。");return}let allies=[];board.forEach((row,r)=>row.forEach((u,c)=>{if(u&&u.side===turn&&u.type!=="core"&&u.hp<u.max)allies.push({u,r,c})}));if(!allies.length){log("当前没有受伤友军。");return}let t=allies.sort((a,b)=>(a.u.hp/a.u.max)-(b.u.hp/b.u.max))[0];t.u.hp=Math.min(t.u.max,t.u.hp+4);energy[turn]-=2;log("圣愈术恢复 "+defs[t.u.type].name+" 4 点生命。");afterAction()}
+ if(skill==="guard"){sound("magic");battleTitle("WARDING AEGIS");if(energy[turn]<2){log("能量不足：战阵守护需要 2 点能量。");return}let allies=[];board.forEach(row=>row.forEach(u=>{if(u&&u.side===turn&&u.type!=="core")allies.push(u)}));if(!allies.length)return;allies.sort((a,b)=>a.hp-b.hp)[0].guard+=4;energy[turn]-=2;log("战阵守护：一名友军获得 4 点护盾。");afterAction()}}
+function showHelp(){alert("【胜利条件】摧毁敌方王座核心（18生命）。\n【移动】选择己方单位，点击绿色格子移动。\n【攻击】点击红色格子攻击。远程单位可隔格攻击。\n【技能】奥术冲击：3能量，对最脆弱敌军造成5伤害；圣愈术：2能量，治疗最受伤友军4生命；战阵守护：2能量，为一名友军增加4护盾。\n【回合】每次行动或结束回合会恢复1点能量，最多6点。\n【注意】核心不可移动。单位移动不穿越其他单位。");}
+init();
+</script></body></html>                                                                                                                                                                                                                                                                                                                                                                                                                           
+  
+  
+   
+  
+  
+  
